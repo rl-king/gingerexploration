@@ -9,6 +9,7 @@ import Icons as Icon
 import Json.Decode as Decode exposing (..)
 import Navigation exposing (Location)
 import Route exposing (..)
+import Task
 import UrlParser as Url exposing (..)
 
 
@@ -27,6 +28,7 @@ type alias Model =
     , searchQuery : String
     , searchResults : List SearchResult
     , currentPage : Resource
+    , currentPageEdges : List SearchResult
     , httpError : String
     , apiEndpoint : String
     }
@@ -38,6 +40,7 @@ init location =
     , searchQuery = initSearchQuery location
     , searchResults = []
     , currentPage = Resource Nothing 0 Nothing Nothing
+    , currentPageEdges = []
     , httpError = ""
     , apiEndpoint = "mediamatic.net"
     }
@@ -53,7 +56,10 @@ initSearchQuery location =
         |> Maybe.withDefault ""
 
 
-checkRoute : String -> Route -> ( Cmd Msg, Maybe String )
+
+-- checkRoute : String -> Route -> ( Task, Maybe String )
+
+
 checkRoute endpoint route =
     case route of
         Home ->
@@ -76,7 +82,7 @@ type Msg
     | EnterSearchQuery String
     | EnterApiEndpoint String
     | GotSearchResults (Result Http.Error (List SearchResult))
-    | GotPage (Result Http.Error Resource)
+    | GotPage (Result Http.Error ( Resource, List SearchResult ))
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -116,8 +122,12 @@ update msg model =
         GotSearchResults (Err x) ->
             { model | httpError = toString x } ! []
 
-        GotPage (Ok page) ->
-            { model | currentPage = page } ! []
+        GotPage (Ok ( page, edges )) ->
+            { model
+                | currentPage = page
+                , currentPageEdges = edges
+            }
+                ! []
 
         GotPage (Err x) ->
             { model | httpError = toString x } ! []
@@ -135,7 +145,7 @@ view model =
                     Lazy.lazy resultsView model
 
                 Page _ ->
-                    pageView model.currentPage
+                    pageView model.currentPage model.currentPageEdges
     in
     div
         []
@@ -193,12 +203,21 @@ resultsViewItem { title, id, imageUrl } =
         [ img [ src imageSrc ] [] ]
 
 
-pageView : Resource -> Html Msg
-pageView { title } =
+pageView : Resource -> List SearchResult -> Html Msg
+pageView { title, edges } incommingEdges =
     section [ class "page-view" ]
         [ div [ class "page-view_body" ]
             [ h2 [] [ text <| Maybe.withDefault "No title" title ]
+            , ul [] <| List.map edge incommingEdges
             ]
+        ]
+
+
+edge : SearchResult -> Html Msg
+edge { title, id, imageUrl } =
+    li [ onClick (NewUrl ("/page/" ++ toString id)) ]
+        [ h4 [] [ text <| Maybe.withDefault "No title" title ]
+        , img [ src <| Maybe.withDefault "" imageUrl ] []
         ]
 
 
@@ -213,10 +232,6 @@ parseLocation location =
         |> Maybe.withDefault Home
 
 
-
--- HTTP
-
-
 performSearch : String -> String -> Cmd Msg
 performSearch endpoint query =
     let
@@ -229,10 +244,21 @@ performSearch endpoint query =
 getCurrentPage : String -> String -> Cmd Msg
 getCurrentPage endpoint id =
     let
-        url =
+        pageEndpoint =
             "https://" ++ endpoint ++ "/api/base/export?id=" ++ id
+
+        edgeEndpoint =
+            "https://" ++ endpoint ++ "/api/search/?format=simple&hasobject=" ++ id
+
+        getPage =
+            Http.get pageEndpoint resourceDecoder
+                |> Http.toTask
+
+        getEdges =
+            Http.get edgeEndpoint searchResultDecoder
+                |> Http.toTask
     in
-    Http.send GotPage (Http.get url resourceDecoder)
+    Task.attempt GotPage <| Task.map2 (\x y -> ( x, y )) getPage getEdges
 
 
 searchResultDecoder : Decode.Decoder (List SearchResult)
@@ -266,7 +292,7 @@ resourceDecoder =
 
 edgeDecoder : Decode.Decoder ResourceEdge
 edgeDecoder =
-    Decode.map2
+    Decode.map3
         ResourceEdge
         (Decode.maybe <|
             Decode.oneOf
@@ -274,7 +300,13 @@ edgeDecoder =
                 , Decode.at [ "predicate_title", "trans", "nl" ] Decode.string
                 ]
         )
-        (Decode.at [ "predicate_id" ] Decode.int)
+        (Decode.at [ "object_id" ] Decode.int)
+        (Decode.maybe <|
+            Decode.oneOf
+                [ Decode.at [ "object_title", "trans", "en" ] Decode.string
+                , Decode.at [ "object_title", "trans", "nl" ] Decode.string
+                ]
+        )
 
 
 
@@ -297,6 +329,7 @@ type alias Resource =
 
 
 type alias ResourceEdge =
-    { title : Maybe String
+    { predicateTitle : Maybe String
     , id : Int
+    , objectTitle : Maybe String
     }

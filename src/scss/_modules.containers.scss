@@ -7,14 +7,11 @@ main {
     margin-top: 4rem;
 }
 
-.search-results {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
+.search-results, .page-view {
+    column-count: 6;
     padding: 1rem;
 
     li {
-        width: calc(20% - 1rem);
         background-color: $wht3;
         overflow: hidden;
         position: relative;
@@ -27,4 +24,8 @@ main {
         width: 100%;
         height: auto;
     }
+}
+
+.page-view {
+    padding: 1rem;
 }
