@@ -1,4 +1,4 @@
-# Zotonic/Ginger Exploration
+# 🔭 Zotonic/Ginger Exploration
 
 Browser for Zotonic/Ginger API written in Elm
 

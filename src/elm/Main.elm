@@ -4,6 +4,7 @@ import Html exposing (..)
 import Html.Attributes as Attr exposing (class, classList, id, src, style, type_, value)
 import Html.Events exposing (onClick, onInput, onSubmit)
 import Http
+import Icons as Icon
 import Json.Decode as Decode exposing (..)
 import Navigation exposing (Location)
 import Route exposing (..)
@@ -34,30 +35,30 @@ type alias Model =
 init : Navigation.Location -> ( Model, Cmd Msg )
 init location =
     { route = parseLocation location
-    , searchQuery = ""
+    , searchQuery = Maybe.withDefault "" (Tuple.second <| checkRoute "mediamatic.net" <| parseLocation location)
     , searchResults = []
     , currentPage = Resource Nothing 0 Nothing
     , menuOpen = False
     , httpErrors = ""
     , apiEndpoint = "mediamatic.net"
     }
-        ! [ checkRoute "mediamatic.net" <| parseLocation location ]
+        ! [ Tuple.first <| checkRoute "mediamatic.net" <| parseLocation location ]
 
 
-checkRoute : String -> Route -> Cmd Msg
+checkRoute : String -> Route -> ( Cmd Msg, Maybe String )
 checkRoute endpoint route =
     case route of
         Home ->
-            Cmd.none
+            ( Cmd.none, Nothing )
 
         Search (Just x) ->
-            performSearch endpoint x
+            ( performSearch endpoint x, Just x )
 
         Search Nothing ->
-            Cmd.none
+            ( Cmd.none, Nothing )
 
         Page x ->
-            getCurrentPage endpoint x
+            ( getCurrentPage endpoint x, Nothing )
 
 
 type Msg
@@ -85,7 +86,7 @@ update msg model =
                 route =
                     parseLocation location
 
-                getData =
+                ( getData, _ ) =
                     checkRoute model.apiEndpoint route
             in
             { model | route = parseLocation location } ! [ getData ]
@@ -129,28 +130,27 @@ view model =
     div
         []
         [ main_ []
-            [ searchView model
-            , p [] [ text model.httpErrors ]
+            [ headerView model
             , currentView
-            , footerView model
+            , p [] [ text model.httpErrors ]
             ]
         ]
 
 
-footerView : Model -> Html Msg
-footerView { apiEndpoint } =
-    footer []
-        [ input [ onInput EnterApiEndpoint, Attr.value apiEndpoint ] []
+headerView : Model -> Html Msg
+headerView model =
+    header []
+        [ searchForm model
+        , section [ class "header-settings" ] [ input [ onInput EnterApiEndpoint, Attr.value model.apiEndpoint ] [] ]
         ]
 
 
-searchView : Model -> Html Msg
-searchView model =
-    section [ class "search-view" ]
-        [ form
-            [ class "search-form", onSubmit (NewUrl ("/search/?q=" ++ model.searchQuery)) ]
-            [ input [ onInput EnterSearchQuery ] []
-            , button [ type_ "submit", onClick (NewUrl ("/search/?q=" ++ model.searchQuery)) ] [ text "Search" ]
+searchForm : Model -> Html Msg
+searchForm model =
+    section [ class "header-search" ]
+        [ form [ onSubmit (NewUrl ("/search/?q=" ++ model.searchQuery)) ]
+            [ input [ onInput EnterSearchQuery, Attr.value model.searchQuery ] []
+            , button [ type_ "submit", onClick (NewUrl ("/search/?q=" ++ model.searchQuery)) ] [ Icon.search ]
             ]
         ]
 
@@ -162,7 +162,7 @@ resultsView { searchResults } =
 
 
 resultsViewItem : SearchResult -> Html Msg
-resultsViewItem { id, imageUrl } =
+resultsViewItem { title, id, imageUrl } =
     let
         imageSrc =
             Maybe.withDefault "" imageUrl
@@ -170,7 +170,7 @@ resultsViewItem { id, imageUrl } =
     li [ onClick (NewUrl ("/page/" ++ toString id)) ]
         [ img [ src imageSrc ] []
         , article []
-            [ h3 [] [ text (toString id) ] ]
+            [ h4 [] [ text <| Maybe.withDefault "No title" title ] ]
         ]
 
 
@@ -229,8 +229,9 @@ getCurrentPage endpoint id =
 searchResultDecoder : Decode.Decoder (List SearchResult)
 searchResultDecoder =
     Decode.list <|
-        Decode.map2
+        Decode.map3
             SearchResult
+            (Decode.maybe <| Decode.at [ "title", "trans", "en" ] Decode.string)
             (Decode.at [ "id" ] Decode.int)
             (Decode.maybe <| Decode.at [ "preview_url" ] Decode.string)
 
@@ -249,7 +250,8 @@ resourceDecoder =
 
 
 type alias SearchResult =
-    { id : Int
+    { title : Maybe String
+    , id : Int
     , imageUrl : Maybe String
     }
 
@@ -257,5 +259,5 @@ type alias SearchResult =
 type alias Resource =
     { title : Maybe String
     , id : Int
-    , image : Maybe String
+    , imageUrl : Maybe String
     }

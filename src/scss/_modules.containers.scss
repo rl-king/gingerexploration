@@ -1,26 +1,29 @@
 body {
-    background-color: $blk2;
-    color: $wht2;
+    background-color: $wht1;
+    color: $blk3;
 }
 
-.search-view {
-    position: absolute;
-    top: 40%;
-    left: 0;
-    width: 100%;
+main {
+    margin-top: 7rem;
+}
+
+.search-results {
     display: flex;
-    justify-content: center;
-}
+    flex-wrap: wrap;
+    justify-content: space-between;
+    padding: 1rem;
 
-.page-view {
+    li {
+        width: calc(20% - 1rem);
+        background-color: $wht3;
+        overflow: hidden;
+        position: relative;
+        margin-bottom: 1rem;
+    }
 
-}
-
-footer {
-    background-color: $blk4;
-    position: fixed;
-    width: 100%;
-    bottom: 0;
-    left: 0;
-    height: 3rem;
+    img {
+        border-radius: 4px;
+        width: 100%;
+        height: auto;
+    }
 }
