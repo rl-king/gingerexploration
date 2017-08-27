@@ -19,7 +19,7 @@ main =
         { init = init
         , view = view
         , update = update
-        , subscriptions = \x -> Sub.none
+        , subscriptions = always Sub.none
         }
 
 
@@ -36,30 +36,25 @@ type alias Model =
 
 init : Navigation.Location -> ( Model, Cmd Msg )
 init location =
-    { route = parseLocation location
-    , searchQuery = initSearchQuery location
+    let
+        route =
+            parseLocation location
+
+        ( getData, query ) =
+            checkRoute "mediamatic.net" route
+    in
+    { route = route
+    , searchQuery = Maybe.withDefault "" query
     , searchResults = []
     , currentPage = Resource Nothing 0 Nothing Nothing
     , currentPageEdges = []
     , httpError = ""
     , apiEndpoint = "mediamatic.net"
     }
-        ! [ Tuple.first <| checkRoute "mediamatic.net" <| parseLocation location ]
+        ! [ getData ]
 
 
-initSearchQuery : Location -> String
-initSearchQuery location =
-    location
-        |> parseLocation
-        |> checkRoute "mediamatic.net"
-        |> Tuple.second
-        |> Maybe.withDefault ""
-
-
-
--- checkRoute : String -> Route -> ( Task, Maybe String )
-
-
+checkRoute : String -> Route -> ( Cmd Msg, Maybe String )
 checkRoute endpoint route =
     case route of
         Home ->
@@ -133,6 +128,10 @@ update msg model =
             { model | httpError = toString x } ! []
 
 
+
+-- VIEWS
+
+
 view : Model -> Html Msg
 view model =
     let
@@ -165,6 +164,15 @@ headerView { apiEndpoint, searchQuery } =
         ]
 
 
+headerSearch : String -> Html Msg
+headerSearch query =
+    section [ class "header-search" ]
+        [ Icon.search
+        , form [ onSubmit (NewUrl ("/search/?q=" ++ query)) ]
+            [ input [ onInput EnterSearchQuery, Attr.value query ] [] ]
+        ]
+
+
 headerEndpoint : String -> String -> Html Msg
 headerEndpoint endpoint query =
     section [ class "header-endpoint" ]
@@ -172,15 +180,6 @@ headerEndpoint endpoint query =
         , form [ onSubmit (NewUrl ("/search/?q=" ++ query)) ]
             [ input [ onInput EnterApiEndpoint, Attr.value endpoint ] []
             ]
-        ]
-
-
-headerSearch : String -> Html Msg
-headerSearch query =
-    section [ class "header-search" ]
-        [ Icon.search
-        , form [ onSubmit (NewUrl ("/search/?q=" ++ query)) ]
-            [ input [ onInput EnterSearchQuery, Attr.value query ] [] ]
         ]
 
 
@@ -222,14 +221,7 @@ edge { title, id, imageUrl } =
 
 
 
--- HELPERS
-
-
-parseLocation : Location -> Route
-parseLocation location =
-    location
-        |> Url.parsePath route
-        |> Maybe.withDefault Home
+-- HTTP REQUESTS
 
 
 performSearch : String -> String -> Cmd Msg
@@ -259,6 +251,10 @@ getCurrentPage endpoint id =
                 |> Http.toTask
     in
     Task.attempt GotPage <| Task.map2 (\x y -> ( x, y )) getPage getEdges
+
+
+
+--JSON DECODERS
 
 
 searchResultDecoder : Decode.Decoder (List SearchResult)
@@ -310,7 +306,7 @@ edgeDecoder =
 
 
 
--- TYPES
+-- TYPE ALIASES
 
 
 type alias SearchResult =
@@ -333,3 +329,12 @@ type alias ResourceEdge =
     , id : Int
     , objectTitle : Maybe String
     }
+
+
+
+-- HELPERS
+
+
+parseLocation : Location -> Route
+parseLocation =
+    Url.parsePath route >> Maybe.withDefault Home

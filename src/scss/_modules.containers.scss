@@ -7,7 +7,7 @@ main {
     margin-top: 4rem;
 }
 
-.search-results, .page-view {
+.search-results {
     column-count: 6;
     padding: 1rem;
 
@@ -27,5 +27,21 @@ main {
 }
 
 .page-view {
+    column-count: 6;
     padding: 1rem;
+
+    li {
+        background-color: $wht3;
+        overflow: hidden;
+        position: relative;
+        margin-bottom: 1rem;
+        cursor: pointer;
+        min-height: 4rem;
+    }
+
+    img {
+        border-radius: 4px;
+        width: 100%;
+        height: auto;
+    }
 }
