@@ -4,7 +4,7 @@ body {
 }
 
 main {
-    margin-top: 7rem;
+    margin-top: 4rem;
 }
 
 .search-results {
@@ -14,7 +14,7 @@ main {
     padding: 1rem;
 
     li {
-        width: calc(20% - 1rem);
+        width: calc(12.5% - 1rem);
         background-color: $wht3;
         overflow: hidden;
         position: relative;

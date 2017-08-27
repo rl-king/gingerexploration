@@ -27,7 +27,6 @@ type alias Model =
     , searchQuery : String
     , searchResults : List SearchResult
     , currentPage : Resource
-    , showSettings : Bool
     , httpError : String
     , apiEndpoint : String
     }
@@ -39,7 +38,6 @@ init location =
     , searchQuery = initSearchQuery location
     , searchResults = []
     , currentPage = Resource Nothing 0 Nothing
-    , showSettings = False
     , httpError = ""
     , apiEndpoint = "mediamatic.net"
     }
@@ -79,7 +77,6 @@ type Msg
     | EnterApiEndpoint String
     | GotSearchResults (Result Http.Error (List SearchResult))
     | GotPage (Result Http.Error Resource)
-    | ToggleMenu
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -101,7 +98,6 @@ update msg model =
             in
             { model
                 | searchResults = []
-                , searchQuery = Maybe.withDefault "" query
                 , httpError = ""
                 , currentPage = Resource Nothing 0 Nothing
                 , route = parseLocation location
@@ -125,9 +121,6 @@ update msg model =
 
         GotPage (Err x) ->
             { model | httpError = toString x } ! []
-
-        ToggleMenu ->
-            { model | showSettings = not model.showSettings } ! []
 
 
 view : Model -> Html Msg
@@ -155,20 +148,27 @@ view model =
 
 
 headerView : Model -> Html Msg
-headerView model =
+headerView { apiEndpoint, searchQuery } =
     header []
-        [ searchForm model
-        , section [ class "header-settings" ] [ input [ onInput EnterApiEndpoint, Attr.value model.apiEndpoint ] [] ]
+        [ headerSearch searchQuery
+        , headerEndpoint apiEndpoint
         ]
 
 
-searchForm : Model -> Html Msg
-searchForm model =
+headerEndpoint : String -> Html Msg
+headerEndpoint endpoint =
+    section [ class "header-endpoint" ]
+        [ Icon.globe
+        , input [ onInput EnterApiEndpoint, Attr.value endpoint ] []
+        ]
+
+
+headerSearch : String -> Html Msg
+headerSearch query =
     section [ class "header-search" ]
-        [ form [ onSubmit (NewUrl ("/search/?q=" ++ model.searchQuery)) ]
-            [ input [ onInput EnterSearchQuery, Attr.value model.searchQuery ] []
-            , button [ type_ "submit", onClick (NewUrl ("/search/?q=" ++ model.searchQuery)) ] [ Icon.search ]
-            ]
+        [ Icon.search
+        , form [ onSubmit (NewUrl ("/search/?q=" ++ query)) ]
+            [ input [ onInput EnterSearchQuery, Attr.value query ] [] ]
         ]
 
 
@@ -183,12 +183,12 @@ resultsViewItem { title, id, imageUrl } =
     let
         imageSrc =
             Maybe.withDefault "" imageUrl
+
+        rscTitle =
+            Maybe.withDefault "No title" title
     in
     li [ onClick (NewUrl ("/page/" ++ toString id)) ]
-        [ img [ src imageSrc ] []
-        , article []
-            [ h4 [] [ text <| Maybe.withDefault "No title" title ] ]
-        ]
+        [ img [ src imageSrc ] [] ]
 
 
 pageView : Resource -> Html Msg
