@@ -1,26 +1,19 @@
-# Tokonoma
+# Zotonic/Ginger Exploration
 
-Speedy static elm site creator
+Browser for Zotonic/Ginger API written in Elm
 
 ## Installation
 
-TODO: Describe the installation process
+`npm install`
 
 ## Usage
 
-TODO: Write usage instructions
+Start webpack dev server with hot-module-reloading
 
-## Contributing
+`npm start`
 
-Contributions are welcome
-
-## History
-
---
-
-## Credits
-
-Ruben Lie King
+## Build 
+`npm run build`
 
 ## License
 
