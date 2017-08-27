@@ -37,7 +37,7 @@ init location =
     { route = parseLocation location
     , searchQuery = initSearchQuery location
     , searchResults = []
-    , currentPage = Resource Nothing 0 Nothing
+    , currentPage = Resource Nothing 0 Nothing Nothing
     , httpError = ""
     , apiEndpoint = "mediamatic.net"
     }
@@ -99,7 +99,7 @@ update msg model =
             { model
                 | searchResults = []
                 , httpError = ""
-                , currentPage = Resource Nothing 0 Nothing
+                , currentPage = Resource Nothing 0 Nothing Nothing
                 , route = parseLocation location
             }
                 ! [ getData ]
@@ -151,15 +151,17 @@ headerView : Model -> Html Msg
 headerView { apiEndpoint, searchQuery } =
     header []
         [ headerSearch searchQuery
-        , headerEndpoint apiEndpoint
+        , headerEndpoint apiEndpoint searchQuery
         ]
 
 
-headerEndpoint : String -> Html Msg
-headerEndpoint endpoint =
+headerEndpoint : String -> String -> Html Msg
+headerEndpoint endpoint query =
     section [ class "header-endpoint" ]
         [ Icon.globe
-        , input [ onInput EnterApiEndpoint, Attr.value endpoint ] []
+        , form [ onSubmit (NewUrl ("/search/?q=" ++ query)) ]
+            [ input [ onInput EnterApiEndpoint, Attr.value endpoint ] []
+            ]
         ]
 
 
@@ -202,16 +204,6 @@ pageView { title } =
 
 
 -- HELPERS
-
-
-isPageView : Route -> Bool
-isPageView route =
-    case route of
-        Page _ ->
-            True
-
-        _ ->
-            False
 
 
 parseLocation : Location -> Route
@@ -259,7 +251,7 @@ searchResultDecoder =
 
 resourceDecoder : Decode.Decoder Resource
 resourceDecoder =
-    Decode.map3
+    Decode.map4
         Resource
         (Decode.maybe <|
             Decode.oneOf
@@ -269,6 +261,20 @@ resourceDecoder =
         )
         (Decode.at [ "id" ] Decode.int)
         (Decode.maybe <| Decode.at [ "preview_url" ] Decode.string)
+        (Decode.maybe <| Decode.at [ "edges" ] <| Decode.list edgeDecoder)
+
+
+edgeDecoder : Decode.Decoder ResourceEdge
+edgeDecoder =
+    Decode.map2
+        ResourceEdge
+        (Decode.maybe <|
+            Decode.oneOf
+                [ Decode.at [ "predicate_title", "trans", "en" ] Decode.string
+                , Decode.at [ "predicate_title", "trans", "nl" ] Decode.string
+                ]
+        )
+        (Decode.at [ "predicate_id" ] Decode.int)
 
 
 
@@ -286,4 +292,11 @@ type alias Resource =
     { title : Maybe String
     , id : Int
     , imageUrl : Maybe String
+    , edges : Maybe (List ResourceEdge)
+    }
+
+
+type alias ResourceEdge =
+    { title : Maybe String
+    , id : Int
     }

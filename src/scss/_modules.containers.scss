@@ -14,11 +14,12 @@ main {
     padding: 1rem;
 
     li {
-        width: calc(12.5% - 1rem);
+        width: calc(20% - 1rem);
         background-color: $wht3;
         overflow: hidden;
         position: relative;
         margin-bottom: 1rem;
+        cursor: pointer;
     }
 
     img {

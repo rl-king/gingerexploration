@@ -8,12 +8,15 @@ header {
     height: 4rem;
     background-color: $wht2;
     border-bottom: 1px solid $wht4;
+
+    form {
+        width: 100%;
+    }
    
     input {
         font-size: ms(5);
         height: 2.5rem;
         width: 100%;
-        margin-left: .5rem;
         background-color: transparent;
         border-bottom: 1px solid $gr4;
     }
@@ -26,9 +29,7 @@ header {
     }
 
     svg {
-        // position: absolute;
-        margin: 4px 0 0;
-        z-index: 1;
+        margin: 4px .5rem;
     }
 }
 
