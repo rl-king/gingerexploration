@@ -1,0 +1,43 @@
+.search-view {
+    font-size: ms(1);
+
+    form {
+        display: flex;
+        width: 400px;
+
+        button {
+            font-size: ms(1);
+            border: 0;
+            background-color: $green;
+            color: $wht1;
+            padding: 0 12px;
+            border-radius: 0 2px 2px 0;
+        }
+
+        input {
+            background-color: $blk4;
+            color: $wht1;
+            height: 38px;
+            width: 100%;
+        }
+    }
+}    
+
+.search-results {
+    display: flex;
+    flex-wrap: wrap;
+
+    li {
+        width: 20%;
+        margin: 1rem;
+        background-color: $blk4;
+        overflow: hidden;
+        position: relative;
+    }
+
+    img {
+        border-radius: 4px;
+        width: 100%;
+        height: auto;
+    }
+}

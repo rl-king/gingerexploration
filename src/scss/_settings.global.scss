@@ -1,0 +1,54 @@
+@import "tools.breakpoint";
+@import "tools.modular-scale";
+
+$b1: 6;
+$b2: 18;
+$b3: 26;
+$b4: 30;
+
+$blk1:		rgb($b1,$b1,$b1);
+$blk2:		rgb($b2,$b2,$b2);
+$blk3:		rgb($b3,$b3,$b3);
+$blk4:		rgb($b4,$b4,$b4);
+
+$w1: 255;
+$w2: 249;
+$w3: 243;
+$w4: 237;
+
+$wht1:		rgb($w1,$w1,$w1);
+$wht2:		rgb($w2,$w2,$w2);
+$wht3:		rgb($w3,$w3,$w3);
+$wht4:		rgb($w4,$w4,$w4);
+
+$g1: 164;
+$g2: 188;
+$g3: 212;
+$g4: 224;
+
+$gr1:       rgb($g1,$g1,$g1);
+$gr2:       rgb($g2,$g2,$g2);
+$gr3:       rgb($g3,$g3,$g3);
+$gr4:       rgb($g4,$g4,$g4);
+
+$blue:	    #009DE3;
+$green:		#27C37F;
+$red:		#ff3333;
+$yellow:	#EEB021;
+$purple:	#7F63D2;
+$pink:	    #f9b2e1;
+$orange:    #FF8A30;
+
+// Breakpoints
+$tiny: 468px;
+$small: 768px;
+$medium: 1024px;
+$large: 1240px;
+$huge: 1660px;
+
+// Fonts
+$sans:   -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
+
+// Modular Scale
+$ms-base: 14px;
+$ms-ratio: 1.2;

@@ -1,0 +1,119 @@
+body {
+	font-family: $sans;
+	font-size: 100%;
+    line-height: 1.2rem;
+}
+
+a {
+	text-decoration: underline;
+    color: $blk1;
+
+	&:hover {
+		text-decoration: underline;
+	}
+}
+
+ul {
+	padding: 0;
+	margin-top: 0;
+	list-style: none;
+}
+
+ul > ul {
+	padding-left: 24px;
+}
+
+.inline-list {
+	display: inline;
+	li {
+		display: inline;
+		margin-right: 12px;
+	}
+}
+
+.aa {
+    -webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+}
+
+strong {
+	font-weight: 500;
+}
+
+small {
+	font-size: ms(0);
+	color: $gr1;
+	-webkit-font-smoothing: antialiased;
+    line-height: 14px;
+}
+
+pre {
+	font-size: ms(0);
+	color: $blk4;
+    background-color: $wht2;
+	-webkit-font-smoothing: antialiased;
+    line-height: 14px;
+    padding: 1rem;
+    max-width: 800px;
+    overflow: auto;
+}
+
+hr {
+	border: 0;
+	border-bottom: 1px solid $blk3;
+}
+
+p {
+	font-size: ms(1);
+	line-height: 21.6px;
+	margin-top: 0;
+	margin-bottom: 0;
+	padding: .5rem 0;
+}
+
+h1 {
+	font-family: $sans;
+	font-weight: 600;
+	font-size: ms(6);
+	margin : 0;
+	padding-bottom: 1rem;
+}
+
+h2 {
+	font-family: $sans;
+	font-weight: 500;
+	font-size: ms(3);
+	margin : 0;
+	padding: .5rem 0 .5rem;
+}
+
+h3 {
+	font-family: $sans;
+	font-weight: 600;
+	font-size: ms(2);
+	margin : 0;
+	padding-bottom: .5rem;
+}
+
+h4 {
+	font-family: $sans;
+	font-weight: 600;
+	font-size: ms(2);
+	margin : 0;
+	padding-bottom: .5rem;
+}
+
+h5 {
+	font-family: $sans;
+	font-weight: 600;
+	font-size: ms(2);
+	margin : 0;
+	padding-bottom: .5rem;
+}
+
+h6 {
+	font-family: inherit;
+	font-weight: 400;
+	font-size: ms();
+	margin: 0;
+}
