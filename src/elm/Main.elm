@@ -3,6 +3,7 @@ module Main exposing (..)
 import Html exposing (..)
 import Html.Attributes as Attr exposing (class, classList, id, src, style, type_, value)
 import Html.Events exposing (onClick, onInput, onSubmit)
+import Html.Lazy as Lazy
 import Http
 import Icons as Icon
 import Json.Decode as Decode exposing (..)
@@ -26,8 +27,8 @@ type alias Model =
     , searchQuery : String
     , searchResults : List SearchResult
     , currentPage : Resource
-    , menuOpen : Bool
-    , httpErrors : String
+    , showSettings : Bool
+    , httpError : String
     , apiEndpoint : String
     }
 
@@ -35,14 +36,23 @@ type alias Model =
 init : Navigation.Location -> ( Model, Cmd Msg )
 init location =
     { route = parseLocation location
-    , searchQuery = Maybe.withDefault "" (Tuple.second <| checkRoute "mediamatic.net" <| parseLocation location)
+    , searchQuery = initSearchQuery location
     , searchResults = []
     , currentPage = Resource Nothing 0 Nothing
-    , menuOpen = False
-    , httpErrors = ""
+    , showSettings = False
+    , httpError = ""
     , apiEndpoint = "mediamatic.net"
     }
         ! [ Tuple.first <| checkRoute "mediamatic.net" <| parseLocation location ]
+
+
+initSearchQuery : Location -> String
+initSearchQuery location =
+    location
+        |> parseLocation
+        |> checkRoute "mediamatic.net"
+        |> Tuple.second
+        |> Maybe.withDefault ""
 
 
 checkRoute : String -> Route -> ( Cmd Msg, Maybe String )
@@ -86,10 +96,17 @@ update msg model =
                 route =
                     parseLocation location
 
-                ( getData, _ ) =
+                ( getData, query ) =
                     checkRoute model.apiEndpoint route
             in
-            { model | route = parseLocation location } ! [ getData ]
+            { model
+                | searchResults = []
+                , searchQuery = Maybe.withDefault "" query
+                , httpError = ""
+                , currentPage = Resource Nothing 0 Nothing
+                , route = parseLocation location
+            }
+                ! [ getData ]
 
         EnterSearchQuery query ->
             { model | searchQuery = query } ! []
@@ -101,16 +118,16 @@ update msg model =
             { model | searchResults = results } ! []
 
         GotSearchResults (Err x) ->
-            { model | httpErrors = toString x } ! []
+            { model | httpError = toString x } ! []
 
         GotPage (Ok page) ->
             { model | currentPage = page } ! []
 
         GotPage (Err x) ->
-            { model | httpErrors = toString x } ! []
+            { model | httpError = toString x } ! []
 
         ToggleMenu ->
-            { model | menuOpen = not model.menuOpen } ! []
+            { model | showSettings = not model.showSettings } ! []
 
 
 view : Model -> Html Msg
@@ -122,7 +139,7 @@ view model =
                     resultsView model
 
                 Search x ->
-                    resultsView model
+                    Lazy.lazy resultsView model
 
                 Page _ ->
                     pageView model.currentPage
@@ -132,7 +149,7 @@ view model =
         [ main_ []
             [ headerView model
             , currentView
-            , p [] [ text model.httpErrors ]
+            , p [] [ text model.httpError ]
             ]
         ]
 
@@ -229,9 +246,13 @@ getCurrentPage endpoint id =
 searchResultDecoder : Decode.Decoder (List SearchResult)
 searchResultDecoder =
     Decode.list <|
-        Decode.map3
-            SearchResult
-            (Decode.maybe <| Decode.at [ "title", "trans", "en" ] Decode.string)
+        Decode.map3 SearchResult
+            (Decode.maybe <|
+                Decode.oneOf
+                    [ Decode.at [ "title", "trans", "en" ] Decode.string
+                    , Decode.at [ "title", "trans", "nl" ] Decode.string
+                    ]
+            )
             (Decode.at [ "id" ] Decode.int)
             (Decode.maybe <| Decode.at [ "preview_url" ] Decode.string)
 
@@ -240,7 +261,12 @@ resourceDecoder : Decode.Decoder Resource
 resourceDecoder =
     Decode.map3
         Resource
-        (Decode.maybe <| Decode.at [ "rsc", "title", "trans", "en" ] Decode.string)
+        (Decode.maybe <|
+            Decode.oneOf
+                [ Decode.at [ "rsc", "title", "trans", "en" ] Decode.string
+                , Decode.at [ "rsc", "title", "trans", "nl" ] Decode.string
+                ]
+        )
         (Decode.at [ "id" ] Decode.int)
         (Decode.maybe <| Decode.at [ "preview_url" ] Decode.string)
 
