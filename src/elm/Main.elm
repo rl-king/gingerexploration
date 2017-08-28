@@ -11,6 +11,7 @@ import Navigation exposing (Location)
 import Route exposing (..)
 import Task
 import UrlParser as Url exposing (..)
+import Window
 
 
 main : Program Never Model Msg
@@ -31,6 +32,7 @@ type alias Model =
     , currentPageEdges : List SearchResult
     , httpError : String
     , apiEndpoint : String
+    , windowSize : Window.Size
     }
 
 
@@ -50,8 +52,9 @@ init location =
     , currentPageEdges = []
     , httpError = ""
     , apiEndpoint = "mediamatic.net"
+    , windowSize = Window.Size 0 0
     }
-        ! [ getData ]
+        ! [ getData, Task.perform SetWindowSize Window.size ]
 
 
 checkRoute : String -> Route -> ( Cmd Msg, Maybe String )
@@ -78,6 +81,7 @@ type Msg
     | EnterApiEndpoint String
     | GotSearchResults (Result Http.Error (List SearchResult))
     | GotPage (Result Http.Error ( Resource, List SearchResult ))
+    | SetWindowSize Window.Size
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -127,6 +131,9 @@ update msg model =
         GotPage (Err x) ->
             { model | httpError = toString x } ! []
 
+        SetWindowSize x ->
+            { model | windowSize = x } ! []
+
 
 
 -- VIEWS
@@ -156,6 +163,10 @@ view model =
         ]
 
 
+
+-- HEADER VIEW
+
+
 headerView : Model -> Html Msg
 headerView { apiEndpoint, searchQuery } =
     header []
@@ -183,23 +194,51 @@ headerEndpoint endpoint query =
         ]
 
 
+
+-- SEARCHRESULTS VIEW
+
+
 resultsView : Model -> Html Msg
-resultsView { searchResults } =
+resultsView { searchResults, windowSize } =
     section []
-        [ ul [ class "search-results" ] <| List.map resultsViewItem searchResults ]
+        [ ul [ class "search-results" ] <| List.indexedMap (resultsViewItem windowSize) searchResults ]
 
 
-resultsViewItem : SearchResult -> Html Msg
-resultsViewItem { title, id, imageUrl } =
+resultsViewItem : Window.Size -> Int -> SearchResult -> Html Msg
+resultsViewItem windowSize index { title, id, imageUrl } =
     let
-        imageSrc =
-            Maybe.withDefault "" imageUrl
+        ( itemWidth, itemHeight ) =
+            ( (toFloat <| windowSize.width) / 5, toFloat windowSize.height / 5 )
+
+        indexAsFloat =
+            toFloat index
+
+        offsetLeft =
+            toString <| itemWidth * toFloat (index % 5)
+
+        offsetTop =
+            toString <| itemHeight * toFloat (floor (indexAsFloat * 0.2))
+
+        imageWithFallback =
+            case imageUrl of
+                Just x ->
+                    img [ src x ] []
+
+                Nothing ->
+                    div [] [ h5 [] [ text rscTitle ], small [] [ text "no-image" ] ]
 
         rscTitle =
             Maybe.withDefault "No title" title
     in
-    li [ onClick (NewUrl ("/page/" ++ toString id)) ]
-        [ img [ src imageSrc ] [] ]
+    li
+        [ style [ "transform" => ("translate(" ++ offsetLeft ++ "px, " ++ offsetTop ++ "px)") ]
+        , onClick (NewUrl ("/page/" ++ toString id))
+        ]
+        [ imageWithFallback ]
+
+
+
+-- SINGLE RESULTPAGE VIEW
 
 
 pageView : Resource -> List SearchResult -> Html Msg
@@ -228,7 +267,7 @@ performSearch : String -> String -> Cmd Msg
 performSearch endpoint query =
     let
         url =
-            "https://" ++ endpoint ++ "/api/search/?format=simple&cat_exclude=person&text=" ++ query
+            "https://" ++ endpoint ++ "/api/search/?format=simple&text=" ++ query
     in
     Http.send GotSearchResults (Http.get url searchResultDecoder)
 
@@ -338,3 +377,8 @@ type alias ResourceEdge =
 parseLocation : Location -> Route
 parseLocation =
     Url.parsePath route >> Maybe.withDefault Home
+
+
+(=>) : a -> b -> ( a, b )
+(=>) a b =
+    ( a, b )

@@ -2,25 +2,24 @@ port module Stylesheets exposing (..)
 
 import Css exposing (..)
 import Css.Elements as E
-import Css.File exposing (..)
-import Css.Namespace exposing (namespace)
-import Dict exposing (..)
-import ModularScale exposing (..)
+import Css.File
+import ModularScale
 
 
-port files : CssFileStructure -> Cmd msg
+port files : Css.File.CssFileStructure -> Cmd msg
 
 
-cssFiles : CssFileStructure
+cssFiles : Css.File.CssFileStructure
 cssFiles =
-    toFileStructure [ ( "main.css", Css.compile [ css ] ) ]
+    Css.File.toFileStructure [ ( "main.css", Css.compile [ css ] ) ]
 
 
-main : CssCompilerProgram
+main : Css.File.CssCompilerProgram
 main =
     Css.File.compiler files cssFiles
 
 
+css : Stylesheet
 css =
     Css.stylesheet <|
         List.concatMap identity
@@ -40,6 +39,10 @@ typography =
     [ E.ul
         [ listStyle none
         , padding zero
+        , margin zero
+        ]
+    , E.h5
+        [ padding zero
         , margin zero
         ]
     ]
@@ -101,21 +104,7 @@ containers =
     , E.main_
         [ marginTop (Css.rem 4)
         ]
-    , class "search-results"
-        [ property "column-count" "6"
-        , padding (Css.rem 1)
-        , descendants
-            [ E.li
-                [ backgroundColor (mono W3)
-                , marginBottom (Css.rem 1)
-                ]
-            , E.img
-                [ borderRadius (px 4)
-                , width (pct 100)
-                , height auto
-                ]
-            ]
-        ]
+    , searchResults
     , class "page-view"
         [ property "column-count" "6"
         , padding (Css.rem 1)
@@ -132,6 +121,33 @@ containers =
             ]
         ]
     ]
+
+
+searchResults : Css.Snippet
+searchResults =
+    class "search-results"
+        [ position absolute
+        , width (pct 100)
+        , height (pct 100)
+        , descendants
+            [ E.li
+                [ width (pct 20)
+                , height (pct 20)
+                , backgroundColor (mono W3)
+                , displayFlex
+                , justifyContent center
+                , alignItems center
+                , position absolute
+                , overflow hidden
+                , property "transition" "transform 1s"
+                ]
+            , E.img
+                [ borderRadius (px 2)
+                , width (pct 100)
+                , height auto
+                ]
+            ]
+        ]
 
 
 
@@ -156,7 +172,7 @@ inputs =
 config : ModularScale.Config
 config =
     { base = [ 1.2 ]
-    , interval = MajorSecond
+    , interval = ModularScale.MajorSecond
     }
 
 
@@ -189,17 +205,8 @@ type Mono
     | G4
 
 
-mono : Mono -> Color
-mono v =
-    monochromeVariables
-        |> List.filter (\( a, b ) -> a == v)
-        |> List.head
-        |> Maybe.withDefault ( B1, 0 )
-        |> (\( x, y ) -> rgb y y y)
-
-
-monochromeVariables : List ( Mono, Int )
-monochromeVariables =
+monoValues : List ( Mono, Int )
+monoValues =
     [ B1 => 6
     , B2 => 18
     , B3 => 26
@@ -213,6 +220,16 @@ monochromeVariables =
     , G3 => 212
     , G4 => 224
     ]
+
+
+mono : Mono -> Color
+mono v =
+    case List.filter ((==) v << Tuple.first) monoValues of
+        [ ( x, y ) ] ->
+            rgb y y y
+
+        _ ->
+            rgba 0 0 0 0
 
 
 blue =
