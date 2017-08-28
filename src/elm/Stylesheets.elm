@@ -4,6 +4,7 @@ import Css exposing (..)
 import Css.Elements as E
 import Css.File exposing (..)
 import Css.Namespace exposing (namespace)
+import Dict exposing (..)
 import ModularScale exposing (..)
 
 
@@ -23,16 +24,32 @@ main =
 css =
     Css.stylesheet <|
         List.concatMap identity
-            [ inputs
+            [ typography
+            , inputs
             , headers
             , containers
             ]
 
 
 
+-- TYPOGRAPHY
+
+
+typography : List Css.Snippet
+typography =
+    [ E.ul
+        [ listStyle none
+        , padding zero
+        , margin zero
+        ]
+    ]
+
+
+
 -- HEADERS
 
 
+headers : List Css.Snippet
 headers =
     [ E.header
         [ position fixed
@@ -42,8 +59,8 @@ headers =
         , zIndex (int 1)
         , displayFlex
         , height (Css.rem 4)
-        , backgroundColor (mono w2)
-        , borderBottom3 (px 1) solid (mono w4)
+        , backgroundColor (mono W2)
+        , borderBottom3 (px 1) solid (mono W4)
         , descendants
             [ E.form
                 [ width (pct 100)
@@ -53,7 +70,7 @@ headers =
                 , height (Css.rem 2.5)
                 , width (pct 100)
                 , backgroundColor transparent
-                , borderBottom3 (px 1) solid (mono g4)
+                , borderBottom3 (px 1) solid (mono G4)
                 ]
             , E.section
                 [ displayFlex
@@ -73,10 +90,11 @@ headers =
 -- CONTAINERS
 
 
+containers : List Css.Snippet
 containers =
     [ E.body
-        [ color (mono b3)
-        , backgroundColor (mono w1)
+        [ color (mono B3)
+        , backgroundColor (mono W1)
         , boxSizing borderBox
         , fontFamilies sans
         ]
@@ -88,7 +106,7 @@ containers =
         , padding (Css.rem 1)
         , descendants
             [ E.li
-                [ backgroundColor (mono w3)
+                [ backgroundColor (mono W3)
                 , marginBottom (Css.rem 1)
                 ]
             , E.img
@@ -103,7 +121,7 @@ containers =
         , padding (Css.rem 1)
         , descendants
             [ E.li
-                [ backgroundColor (mono w3)
+                [ backgroundColor (mono W3)
                 , marginBottom (Css.rem 1)
                 ]
             , E.img
@@ -120,6 +138,7 @@ containers =
 -- INPUTS
 
 
+inputs : List Css.Snippet
 inputs =
     [ E.input
         [ padding2 zero (px 8)
@@ -150,16 +169,50 @@ ms =
 -- VARIABLES
 
 
-( b1, b2, b3, b4 ) =
-    ( 6, 18, 26, 30 )
-( w1, w2, w3, w4 ) =
-    ( 255, 249, 243, 237 )
-( g1, g2, g3, g4 ) =
-    ( 164, 188, 212, 224 )
+(=>) : a -> b -> ( a, b )
+(=>) a b =
+    ( a, b )
 
 
-mono x =
-    rgb x x x
+type Mono
+    = B1
+    | B2
+    | B3
+    | B4
+    | W1
+    | W2
+    | W3
+    | W4
+    | G1
+    | G2
+    | G3
+    | G4
+
+
+mono : Mono -> Color
+mono v =
+    monochromeVariables
+        |> List.filter (\( a, b ) -> a == v)
+        |> List.head
+        |> Maybe.withDefault ( B1, 0 )
+        |> (\( x, y ) -> rgb y y y)
+
+
+monochromeVariables : List ( Mono, Int )
+monochromeVariables =
+    [ B1 => 6
+    , B2 => 18
+    , B3 => 26
+    , B4 => 30
+    , W1 => 255
+    , W2 => 249
+    , W3 => 243
+    , W4 => 237
+    , G1 => 164
+    , G2 => 188
+    , G3 => 212
+    , G4 => 224
+    ]
 
 
 blue =
@@ -195,4 +248,15 @@ orange =
 
 
 sans =
-    [ "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", "sans-serif" ]
+    [ "-apple-system"
+    , "BlinkMacSystemFont"
+    , "Segoe UI"
+    , "Roboto"
+    , "Oxygen"
+    , "Ubuntu"
+    , "Cantarell"
+    , "Fira Sans"
+    , "Droid Sans"
+    , "Helvetica Neue"
+    , "sans-serif"
+    ]
