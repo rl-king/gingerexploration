@@ -33,7 +33,7 @@ var commonConfig = {
         modules: ['node_modules', path.resolve(__dirname, "src")]
     },
     module: {
-        noParse: /\.elm$/,
+        noParse: /^((?!Stylesheets).)*\.elm.*$/,
         rules: [{
             test: /\.(eot|ttf|woff|woff2|svg)$/,
             use: 'file-loader?publicPath=../../&name=Css/[hash].[ext]'
@@ -54,7 +54,7 @@ var commonConfig = {
     ]
 }
 
-// additional webpack settings for local env (when invoked by 'npm start')
+
 if (isDev === true) {
     module.exports = merge(commonConfig, {
         entry: [
@@ -62,7 +62,6 @@ if (isDev === true) {
             entryPath
         ],
         devServer: {
-            // serve index.html in place of 404 responses
             historyApiFallback: true,
             contentBase: './src',
             hot: true,
@@ -71,7 +70,7 @@ if (isDev === true) {
         module: {
             rules: [{
                 test: /\.elm$/,
-                exclude: [/elm-stuff/, /node_modules/],
+                exclude: [/elm-stuff/, /node_modules/, /Stylesheets\.elm$/],
                 use: [{
                     loader: 'elm-hot-loader'
                 },
@@ -79,10 +78,15 @@ if (isDev === true) {
                     loader: 'elm-webpack-loader',
                     options: { debug: true }
                 }]
-            },{
+            }, 
+            {
                 test: /\.sc?ss$/,
                 use: ['style-loader', 'css-loader', 'postcss-loader', 'sass-loader']
-            }]
+            },
+            {
+                test: /Stylesheets\.elm$/,
+                use: ['style-loader', 'css-loader', 'elm-css-webpack-loader']
+            },]
         }
     });
 }
@@ -96,13 +100,21 @@ if (isProd === true) {
                 test: /\.elm$/,
                 exclude: [/elm-stuff/, /node_modules/],
                 use: 'elm-webpack-loader'
-            }, {
+            },
+            {
                 test: /\.sc?ss$/,
                 use: ExtractTextPlugin.extract({
                     fallback: 'style-loader',
                     use: ['css-loader', 'postcss-loader', 'sass-loader']
                 })
-            }]
+            },
+            {
+                test: /Stylesheets\.elm$/,
+                use: ExtractTextPlugin.extract({
+                    fallback: "style-loader",
+                    use: ['css-loader', 'elm-css-webpack-loader']
+                })
+            },]
         },
         plugins: [
             new ExtractTextPlugin({
@@ -112,12 +124,12 @@ if (isProd === true) {
             new OptimizeCssAssetsPlugin({
                 assetNameRegExp: /\.optimize\.css$/g,
                 cssProcessor: require('cssnano'),
-                cssProcessorOptions: { discardComments: {removeAll: true } },
+                cssProcessorOptions: { discardComments: { removeAll: true } },
                 canPrint: true
             }),
             new CopyWebpackPlugin([
-                {from: 'src/images', to: 'images/'},
-                {from: 'src/misc' },
+                { from: 'src/images', to: 'images/' },
+                { from: 'src/misc' },
                 // {from: 'src/favicon.ico'}
             ]),
 

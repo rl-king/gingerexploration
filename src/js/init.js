@@ -1,4 +1,6 @@
-require( '../scss/style.scss' );
-const elm = require( '../elm/Main' );
+// require('../scss/style.scss');
+require('../elm/Stylesheets.elm');
 
-const app = elm.Main.embed(document.getElementById('app'));
+var elm = require( '../elm/Main' );
+
+var app = elm.Main.embed(document.getElementById('app'));
