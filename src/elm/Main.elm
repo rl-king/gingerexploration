@@ -29,7 +29,8 @@ type alias Model =
     , searchQuery : String
     , searchResults : List SearchResult
     , currentPage : Resource
-    , currentPageEdges : List SearchResult
+    , currentPageOutgoing : List SearchResult
+    , currentPageIncoming : List SearchResult
     , httpError : String
     , apiEndpoint : String
     , windowSize : Window.Size
@@ -49,7 +50,8 @@ init location =
     , searchQuery = Maybe.withDefault "" query
     , searchResults = []
     , currentPage = Resource Nothing 0 Nothing Nothing
-    , currentPageEdges = []
+    , currentPageOutgoing = []
+    , currentPageIncoming = []
     , httpError = ""
     , apiEndpoint = "mediamatic.net"
     , windowSize = Window.Size 0 0
@@ -80,7 +82,7 @@ type Msg
     | EnterSearchQuery String
     | EnterApiEndpoint String
     | GotSearchResults (Result Http.Error (List SearchResult))
-    | GotPage (Result Http.Error ( Resource, List SearchResult ))
+    | GotPage (Result Http.Error ( Resource, List SearchResult, List SearchResult ))
     | SetWindowSize Window.Size
 
 
@@ -121,10 +123,11 @@ update msg model =
         GotSearchResults (Err x) ->
             { model | httpError = toString x } ! []
 
-        GotPage (Ok ( page, edges )) ->
+        GotPage (Ok ( page, outgoing, incoming )) ->
             { model
                 | currentPage = page
-                , currentPageEdges = edges
+                , currentPageOutgoing = outgoing
+                , currentPageIncoming = incoming
             }
                 ! []
 
@@ -151,7 +154,7 @@ view model =
                     Lazy.lazy resultsView model
 
                 Page _ ->
-                    pageView model.currentPage model.currentPageEdges
+                    pageView model.currentPage model.currentPageOutgoing model.currentPageIncoming
     in
     div
         []
@@ -200,15 +203,15 @@ headerEndpoint endpoint query =
 
 resultsView : Model -> Html Msg
 resultsView { searchResults, windowSize } =
-    section []
-        [ ul [ class "search-results" ] <| List.indexedMap (resultsViewItem windowSize) searchResults ]
+    section [ class "search-results" ]
+        [ ul [] <| List.indexedMap (resultsViewItem windowSize) searchResults ]
 
 
 resultsViewItem : Window.Size -> Int -> SearchResult -> Html Msg
 resultsViewItem windowSize index { title, id, imageUrl } =
     let
         ( itemWidth, itemHeight ) =
-            ( (toFloat <| windowSize.width) / 5, toFloat windowSize.height / 5 )
+            ( toFloat windowSize.width / 5, toFloat windowSize.height / 5 )
 
         indexAsFloat =
             toFloat index
@@ -229,33 +232,47 @@ resultsViewItem windowSize index { title, id, imageUrl } =
 
         rscTitle =
             Maybe.withDefault "No title" title
+
+        toPx x =
+            toString x ++ "px"
     in
     li
-        [ style [ "transform" => ("translate(" ++ offsetLeft ++ "px, " ++ offsetTop ++ "px)") ]
+        [ style
+            [ "width" => toPx itemWidth
+            , "height" => toPx itemHeight
+            , "transform" => ("translate(" ++ offsetLeft ++ "px, " ++ offsetTop ++ "px)")
+            , "padding" => "1rem"
+            ]
         , onClick (NewUrl ("/page/" ++ toString id))
         ]
         [ imageWithFallback ]
 
 
 
--- SINGLE RESULTPAGE VIEW
+-- SINGLE PAGE VIEW
 
 
-pageView : Resource -> List SearchResult -> Html Msg
-pageView { title, edges } incommingEdges =
+pageView : Resource -> List SearchResult -> List SearchResult -> Html Msg
+pageView { title, edges, imageUrl } outgoing incoming =
     section [ class "page-view" ]
-        [ div [ class "page-view_body" ]
-            [ h2 [] [ text <| Maybe.withDefault "No title" title ]
-            , ul [] <| List.map edge incommingEdges
+        [ div [ class "page-view_header" ]
+            [ div []
+                [ img [ class "page-view_header-image", src <| Maybe.withDefault "" imageUrl ] []
+                , h2 [] [ text <| Maybe.withDefault "No title" title ]
+                ]
             ]
+        , h3 [] [ text "Incoming edges" ]
+        , ul [] <| List.map edge incoming
+        , h3 [] [ text "Outgoing edges" ]
+        , ul [] <| List.map edge outgoing
         ]
 
 
 edge : SearchResult -> Html Msg
 edge { title, id, imageUrl } =
     li [ onClick (NewUrl ("/page/" ++ toString id)) ]
-        [ h4 [] [ text <| Maybe.withDefault "No title" title ]
-        , img [ src <| Maybe.withDefault "" imageUrl ] []
+        [ img [ src <| Maybe.withDefault "" imageUrl ] []
+        , h6 [] [ text <| Maybe.withDefault "No title" title ]
         ]
 
 
@@ -278,18 +295,25 @@ getCurrentPage endpoint id =
         pageEndpoint =
             "https://" ++ endpoint ++ "/api/base/export?id=" ++ id
 
-        edgeEndpoint =
+        outgoingEndpoint =
             "https://" ++ endpoint ++ "/api/search/?format=simple&hasobject=" ++ id
+
+        incomingEndpoint =
+            "https://" ++ endpoint ++ "/api/search/?format=simple&hassubject=" ++ id
 
         getPage =
             Http.get pageEndpoint resourceDecoder
                 |> Http.toTask
 
-        getEdges =
-            Http.get edgeEndpoint searchResultDecoder
+        getOutgoingEdges =
+            Http.get outgoingEndpoint searchResultDecoder
+                |> Http.toTask
+
+        getIncomingEdges =
+            Http.get incomingEndpoint searchResultDecoder
                 |> Http.toTask
     in
-    Task.attempt GotPage <| Task.map2 (\x y -> ( x, y )) getPage getEdges
+    Task.attempt GotPage <| Task.map3 (,,) getPage getOutgoingEdges getIncomingEdges
 
 
 
@@ -299,7 +323,7 @@ getCurrentPage endpoint id =
 searchResultDecoder : Decode.Decoder (List SearchResult)
 searchResultDecoder =
     Decode.list <|
-        Decode.map3 SearchResult
+        Decode.map4 SearchResult
             (Decode.maybe <|
                 Decode.oneOf
                     [ Decode.at [ "title", "trans", "en" ] Decode.string
@@ -308,6 +332,7 @@ searchResultDecoder =
             )
             (Decode.at [ "id" ] Decode.int)
             (Decode.maybe <| Decode.at [ "preview_url" ] Decode.string)
+            (Decode.at [ "category" ] (Decode.list Decode.string))
 
 
 resourceDecoder : Decode.Decoder Resource
@@ -352,6 +377,7 @@ type alias SearchResult =
     { title : Maybe String
     , id : Int
     , imageUrl : Maybe String
+    , category : List String
     }
 
 

@@ -22,7 +22,7 @@ main =
 css : Stylesheet
 css =
     Css.stylesheet <|
-        List.concatMap identity
+        List.concat
             [ typography
             , inputs
             , headers
@@ -39,6 +39,18 @@ typography =
     [ E.ul
         [ listStyle none
         , padding zero
+        , margin zero
+        ]
+    , E.h2
+        [ fontSize (ms 2)
+        , fontWeight (int 500)
+        , padding zero
+        , margin zero
+        ]
+    , E.h3
+        [ fontSize (ms 0)
+        , fontWeight (int 500)
+        , padding2 (Css.rem 0.5) zero
         , margin zero
         ]
     , E.h5
@@ -95,56 +107,81 @@ headers =
 
 containers : List Css.Snippet
 containers =
-    [ E.body
+    [ everything
+        [ boxSizing borderBox
+        ]
+    , E.body
         [ color (mono B3)
         , backgroundColor (mono W1)
-        , boxSizing borderBox
         , fontFamilies sans
         ]
     , E.main_
         [ marginTop (Css.rem 4)
         ]
     , searchResults
-    , class "page-view"
-        [ property "column-count" "6"
-        , padding (Css.rem 1)
-        , descendants
-            [ E.li
-                [ backgroundColor (mono W3)
-                , marginBottom (Css.rem 1)
-                ]
-            , E.img
-                [ borderRadius (px 4)
-                , width (pct 100)
-                , height auto
-                ]
-            ]
-        ]
+    , pageView
     ]
 
 
 searchResults : Css.Snippet
 searchResults =
     class "search-results"
-        [ position absolute
-        , width (pct 100)
-        , height (pct 100)
-        , descendants
-            [ E.li
-                [ width (pct 20)
-                , height (pct 20)
-                , backgroundColor (mono W3)
+        [ descendants
+            [ E.ul
+                [ position absolute
+                , top (Css.rem 4)
+                , left zero
+                ]
+            , E.li
+                [ backgroundColor (mono W3)
                 , displayFlex
                 , justifyContent center
                 , alignItems center
                 , position absolute
-                , overflow hidden
-                , property "transition" "transform 1s"
+                , top zero
+                , left zero
                 ]
             , E.img
                 [ borderRadius (px 2)
                 , width (pct 100)
                 , height auto
+                ]
+            ]
+        ]
+
+
+pageView : Css.Snippet
+pageView =
+    class "page-view"
+        [ descendants
+            [ E.ul
+                [ displayFlex
+                , flexWrap wrap
+                , justifyContent spaceBetween
+                ]
+            , E.li
+                [ backgroundColor (mono W3)
+                , displayFlex
+                , flexWrap wrap
+                , justifyContent center
+                , alignItems flexStart
+                , width (pct 4.8)
+                ]
+            , E.img
+                [ borderRadius (px 2)
+                , width (pct 100)
+                , height auto
+                ]
+            , class "page-view_header"
+                [ displayFlex
+                , justifyContent center
+                , paddingTop (Css.rem 2)
+                , descendants
+                    [ E.img
+                        [ width (px 400)
+                        , height auto
+                        ]
+                    ]
                 ]
             ]
         ]
